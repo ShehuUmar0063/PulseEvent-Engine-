@@ -1,0 +1,6 @@
+{
+  "name": "PulseEvent Engine — Instant Multimodal Event Reporter & Asset Vault",
+  "description": "Instant multimodal event intelligence, open-weight Gemma 4 visual reasoning trace, real-time bulletin generation, and secure asset archive vault.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
