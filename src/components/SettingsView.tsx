@@ -113,7 +113,74 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       </div>
 
-      {/* Section 3: Data & Storage */}
+      {/* Section 3: Open Source Docs & Legal */}
+      <div
+        className={`p-5 rounded-lg border space-y-3.5 ${
+          isDarkMode
+            ? 'bg-[#1e1e1e] border-[#2c2c2c] text-[#d4d4d4]'
+            : 'bg-[#ffffff] border-[#e9e9e7] text-[#37352f]'
+        }`}
+      >
+        <h3 className="text-xs font-semibold uppercase tracking-wider opacity-60">
+          Open Source Documentation & Governance
+        </h3>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <button
+            type="button"
+            onClick={onOpenGitHubModal}
+            className={`p-2.5 rounded border text-left space-y-1 transition-colors cursor-pointer ${
+              isDarkMode
+                ? 'bg-[#171717] border-[#292929] hover:bg-[#202020]'
+                : 'bg-[#fbfbfa] border-[#e9e9e7] hover:bg-[#f2f1ee]'
+            }`}
+          >
+            <div className="font-semibold text-[11px]">README.md</div>
+            <p className="opacity-60 text-[10px]">Architecture, setup & features</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenGitHubModal}
+            className={`p-2.5 rounded border text-left space-y-1 transition-colors cursor-pointer ${
+              isDarkMode
+                ? 'bg-[#171717] border-[#292929] hover:bg-[#202020]'
+                : 'bg-[#fbfbfa] border-[#e9e9e7] hover:bg-[#f2f1ee]'
+            }`}
+          >
+            <div className="font-semibold text-[11px]">LICENSE</div>
+            <p className="opacity-60 text-[10px]">MIT Open Source</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenGitHubModal}
+            className={`p-2.5 rounded border text-left space-y-1 transition-colors cursor-pointer ${
+              isDarkMode
+                ? 'bg-[#171717] border-[#292929] hover:bg-[#202020]'
+                : 'bg-[#fbfbfa] border-[#e9e9e7] hover:bg-[#f2f1ee]'
+            }`}
+          >
+            <div className="font-semibold text-[11px]">Code of Conduct</div>
+            <p className="opacity-60 text-[10px]">Contributor Covenant v2.1</p>
+          </button>
+
+          <button
+            type="button"
+            onClick={onOpenGitHubModal}
+            className={`p-2.5 rounded border text-left space-y-1 transition-colors cursor-pointer ${
+              isDarkMode
+                ? 'bg-[#171717] border-[#292929] hover:bg-[#202020]'
+                : 'bg-[#fbfbfa] border-[#e9e9e7] hover:bg-[#f2f1ee]'
+            }`}
+          >
+            <div className="font-semibold text-[11px]">CONTRIBUTING</div>
+            <p className="opacity-60 text-[10px]">PR workflow & guidelines</p>
+          </button>
+        </div>
+      </div>
+
+      {/* Section 4: Data & Storage */}
       <div
         className={`p-5 rounded-lg border space-y-4 ${
           isDarkMode
