@@ -115,14 +115,49 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
-## 🔒 Authentication & Default Credentials
+## 🚀 Deploying to Vercel & GitHub
 
-PulseEvent Engine starts on a secure, gated login screen. You can unlock the workspace via:
+### 🌐 Deploying to Vercel (Recommended)
 
-- **1-Click Organizer Login**: Click the primary `Continue as Organizer` button.
-- **Manual Credentials**:
-  - **Username**: `organizer`
-  - **Password**: `password`
+PulseEvent Engine includes pre-configured `vercel.json` and serverless functions in `/api`:
+
+1. **Push your repository to GitHub** (or connect directly via the Vercel dashboard).
+2. Go to [vercel.com/new](https://vercel.com/new) and select your repository.
+3. Vercel automatically detects the **Vite** framework and `vercel.json` configuration.
+4. *(Optional)* Add `GEMINI_API_KEY` under **Environment Variables** if using server-side Gemini Cloud acceleration.
+5. Click **Deploy**. Your app is live with full serverless endpoints and client-side fallbacks!
+
+Or deploy via the Vercel CLI:
+```bash
+npm install -g vercel
+vercel
+```
+
+---
+
+### 🐙 Deploying to GitHub Pages
+
+PulseEvent Engine includes an automated GitHub Actions deployment workflow (`.github/workflows/deploy-pages.yml`):
+
+1. **Push your repository to GitHub**:
+   ```bash
+   git remote add origin https://github.com/<your-username>/<repo-name>.git
+   git push -u origin main
+   ```
+2. In your GitHub repository, navigate to **Settings > Pages**.
+3. Under **Build and deployment > Source**, select **GitHub Actions**.
+4. The workflow will automatically build and deploy your app to `https://<username>.github.io/<repo-name>/`.
+5. *(Custom Domains)*: You can add your custom domain (e.g. `events.yourdomain.com`) in the Pages settings. The included `public/.nojekyll` and `public/404.html` ensure clean SPA client-side routing on page reloads.
+
+---
+
+## 🔒 Authentication & Account Management
+
+PulseEvent Engine features full **Sign In** and **Sign Up** authentication:
+
+- **Create Account (Sign Up)**: Register a personalized organizer account with full name, email/username, custom role (e.g., Event Producer, DevRel Lead, Press Officer), and password. Accounts persist in `localStorage`.
+- **Sign In**: Access the workspace using any registered account.
+- **1-Click Organizer Login**: Instant demo access with pre-configured organizer credentials (`organizer` / `password`).
 
 ---
 

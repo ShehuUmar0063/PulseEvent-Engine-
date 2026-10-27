@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowRight, Lock, Sparkles, Check, FileText } from 'lucide-react';
+import { ArrowRight, Lock, Sparkles, Check, FileText, UserPlus, LogIn, User, Mail, Shield } from 'lucide-react';
 import { UserSession } from '../types';
 
 interface AuthScreenProps {
@@ -9,13 +9,27 @@ interface AuthScreenProps {
 }
 
 export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess, isDarkMode }) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+
+  // Login fields
+  const [loginIdentifier, setLoginIdentifier] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+
+  // Signup fields
+  const [signupName, setSignupName] = useState('');
+  const [signupIdentifier, setSignupIdentifier] = useState('');
+  const [signupRole, setSignupRole] = useState('Event Organizer');
+  const [signupPassword, setSignupPassword] = useState('');
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
+
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Quick 1-click default organizer login
   const handleOrganizerContinue = () => {
     setIsLoading(true);
+    setErrorMessage('');
     setTimeout(() => {
       const session: UserSession = {
         username: 'organizer',
@@ -29,28 +43,124 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess, isDarkMo
     }, 250);
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  // Handle Login form
+  const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage('');
     setIsLoading(true);
 
     setTimeout(() => {
-      const norm = username.trim().toLowerCase();
-      if ((norm === 'organizer' && password === 'password') || (norm.length >= 2 && password.length >= 3)) {
+      const norm = loginIdentifier.trim().toLowerCase();
+
+      // Check registered users in localStorage
+      let registeredUsers: any[] = [];
+      try {
+        const stored = localStorage.getItem('pulseevent_registered_users');
+        if (stored) registeredUsers = JSON.parse(stored);
+      } catch (e) {
+        registeredUsers = [];
+      }
+
+      const matchedUser = registeredUsers.find(
+        (u) => (u.username.toLowerCase() === norm || u.email?.toLowerCase() === norm) && u.password === loginPassword
+      );
+
+      if (matchedUser) {
+        const session: UserSession = {
+          username: matchedUser.username,
+          role: matchedUser.role || 'Event Organizer',
+          name: matchedUser.name || matchedUser.username,
+          token: 'pe-usr-' + Math.random().toString(36).substring(2, 9),
+          loginTime: new Date().toISOString(),
+        };
+        localStorage.setItem('pulseevent_session', JSON.stringify(session));
+        onLoginSuccess(session);
+        return;
+      }
+
+      // Default organizer credentials or standard valid password
+      if ((norm === 'organizer' && loginPassword === 'password') || (norm.length >= 2 && loginPassword.length >= 3)) {
         const session: UserSession = {
           username: norm || 'organizer',
           role: 'Workspace Lead & Organizer',
-          name: norm === 'organizer' ? 'Elena Vance' : username.trim(),
-          token: 'pe-user-' + Math.random().toString(36).substring(2, 9),
+          name: norm === 'organizer' ? 'Elena Vance' : loginIdentifier.trim(),
+          token: 'pe-usr-' + Math.random().toString(36).substring(2, 9),
           loginTime: new Date().toISOString(),
         };
         localStorage.setItem('pulseevent_session', JSON.stringify(session));
         onLoginSuccess(session);
       } else {
-        setErrorMessage('Invalid credentials. Click "Continue as Organizer" for 1-click access.');
+        setErrorMessage('Invalid credentials. Check your details or click "Continue as Organizer".');
         setIsLoading(false);
       }
-    }, 250);
+    }, 300);
+  };
+
+  // Handle Signup form
+  const handleSignupSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMessage('');
+    setSuccessMessage('');
+
+    if (!signupName.trim() || !signupIdentifier.trim()) {
+      setErrorMessage('Please fill in your name and email/username.');
+      return;
+    }
+
+    if (signupPassword.length < 4) {
+      setErrorMessage('Password should be at least 4 characters long.');
+      return;
+    }
+
+    if (signupPassword !== signupConfirmPassword) {
+      setErrorMessage('Passwords do not match.');
+      return;
+    }
+
+    setIsLoading(true);
+
+    setTimeout(() => {
+      // Save new user to localStorage
+      try {
+        const stored = localStorage.getItem('pulseevent_registered_users');
+        const users = stored ? JSON.parse(stored) : [];
+
+        const existing = users.find(
+          (u: any) => u.username.toLowerCase() === signupIdentifier.trim().toLowerCase()
+        );
+        if (existing) {
+          setErrorMessage('An account with this email/username already exists. Please sign in.');
+          setIsLoading(false);
+          return;
+        }
+
+        const newUser = {
+          name: signupName.trim(),
+          username: signupIdentifier.trim(),
+          role: signupRole,
+          password: signupPassword,
+          createdAt: new Date().toISOString(),
+        };
+
+        users.push(newUser);
+        localStorage.setItem('pulseevent_registered_users', JSON.stringify(users));
+
+        // Auto login newly registered user
+        const session: UserSession = {
+          username: newUser.username,
+          role: newUser.role,
+          name: newUser.name,
+          token: 'pe-reg-' + Math.random().toString(36).substring(2, 9),
+          loginTime: new Date().toISOString(),
+        };
+        localStorage.setItem('pulseevent_session', JSON.stringify(session));
+        onLoginSuccess(session);
+      } catch (err) {
+        console.error('Signup error:', err);
+        setErrorMessage('Could not complete registration. Please try again.');
+        setIsLoading(false);
+      }
+    }, 350);
   };
 
   return (
@@ -81,8 +191,8 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess, isDarkMo
         </div>
       </header>
 
-      {/* Center Notion-Style Login Box */}
-      <main className="w-full max-w-[380px] mx-auto px-6 py-8 flex-1 flex flex-col justify-center">
+      {/* Center Notion-Style Auth Card */}
+      <main className="w-full max-w-[400px] mx-auto px-6 py-8 flex-1 flex flex-col justify-center">
         <div>
           {/* Workspace Icon */}
           <div
@@ -96,100 +206,294 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onLoginSuccess, isDarkMo
           </div>
 
           <h1 className="text-xl font-bold tracking-tight mb-1">PulseEvent Engine</h1>
-          <p className="text-xs opacity-70 leading-relaxed mb-6">
+          <p className="text-xs opacity-70 leading-relaxed mb-5">
             Instant Multimodal Event Reporter & Asset Vault
           </p>
 
-          {/* Primary Action: Continue as Organizer */}
-          <button
-            type="button"
-            onClick={handleOrganizerContinue}
-            disabled={isLoading}
-            className={`w-full py-2.5 px-4 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-50 ${
-              isDarkMode
-                ? 'bg-[#ffffff] text-[#191919] hover:bg-[#e6e6e6]'
-                : 'bg-[#2383e2] text-[#ffffff] hover:bg-[#1d6fc2]'
+          {/* Notion Segmented Tab: Sign In vs Sign Up */}
+          <div
+            className={`flex items-center p-1 rounded-md border text-xs mb-5 ${
+              isDarkMode ? 'bg-[#1e1e1e] border-[#2d2d2d]' : 'bg-[#f7f6f3] border-[#e9e9e7]'
             }`}
           >
-            {isLoading ? (
-              <span className="flex items-center gap-2">
-                <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                <span>Entering Workspace...</span>
-              </span>
-            ) : (
-              <>
-                <span>Continue as Organizer</span>
-                <ArrowRight className="w-4 h-4" />
-              </>
-            )}
-          </button>
-
-          {/* Divider */}
-          <div className="relative my-6 flex items-center justify-center">
-            <div
-              className={`w-full border-t ${
-                isDarkMode ? 'border-[#2d2d2d]' : 'border-[#e9e9e7]'
-              }`}
-            />
-            <span
-              className={`relative px-3 text-[11px] uppercase tracking-wider font-medium ${
-                isDarkMode ? 'bg-[#191919] text-[#777777]' : 'bg-[#ffffff] text-[#9b9b9b]'
+            <button
+              type="button"
+              onClick={() => {
+                setAuthMode('login');
+                setErrorMessage('');
+              }}
+              className={`flex-1 py-1.5 px-3 rounded font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                authMode === 'login'
+                  ? isDarkMode
+                    ? 'bg-[#2b2b2b] text-white shadow-xs'
+                    : 'bg-[#ffffff] text-[#37352f] shadow-xs'
+                  : 'opacity-60 hover:opacity-100'
               }`}
             >
-              or sign in with password
-            </span>
-          </div>
-
-          {/* Form */}
-          <form onSubmit={handleFormSubmit} className="space-y-3.5">
-            <div>
-              <label className="block text-xs font-medium opacity-80 mb-1">Email or username</label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="organizer"
-                className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition-all ${
-                  isDarkMode
-                    ? 'bg-[#222222] border-[#333333] text-[#ffffff] placeholder-[#666666] focus:border-[#555555]'
-                    : 'bg-[#fbfbfa] border-[#e9e9e7] text-[#37352f] placeholder-[#a0a09e] focus:border-[#2383e2] focus:bg-[#ffffff]'
-                }`}
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium opacity-80 mb-1">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition-all ${
-                  isDarkMode
-                    ? 'bg-[#222222] border-[#333333] text-[#ffffff] placeholder-[#666666] focus:border-[#555555]'
-                    : 'bg-[#fbfbfa] border-[#e9e9e7] text-[#37352f] placeholder-[#a0a09e] focus:border-[#2383e2] focus:bg-[#ffffff]'
-                }`}
-              />
-            </div>
-
-            {errorMessage && (
-              <p className="text-xs text-rose-500 bg-rose-500/10 border border-rose-500/20 p-2 rounded">
-                {errorMessage}
-              </p>
-            )}
+              <LogIn className="w-3.5 h-3.5" />
+              <span>Sign In</span>
+            </button>
 
             <button
-              type="submit"
-              disabled={isLoading}
-              className={`w-full py-2 px-3 text-xs font-medium rounded-md border transition-colors cursor-pointer disabled:opacity-50 ${
-                isDarkMode
-                  ? 'bg-[#262626] border-[#333333] text-[#e6e6e6] hover:bg-[#303030]'
-                  : 'bg-[#f7f6f3] border-[#e0dfdc] text-[#37352f] hover:bg-[#eae8e4]'
+              type="button"
+              onClick={() => {
+                setAuthMode('signup');
+                setErrorMessage('');
+              }}
+              className={`flex-1 py-1.5 px-3 rounded font-medium transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
+                authMode === 'signup'
+                  ? isDarkMode
+                    ? 'bg-[#2b2b2b] text-white shadow-xs'
+                    : 'bg-[#ffffff] text-[#37352f] shadow-xs'
+                  : 'opacity-60 hover:opacity-100'
               }`}
             >
-              Sign In
+              <UserPlus className="w-3.5 h-3.5" />
+              <span>Create Account</span>
             </button>
-          </form>
+          </div>
+
+          {/* MODE 1: LOGIN */}
+          {authMode === 'login' && (
+            <div>
+              {/* Primary Action: Continue as Organizer */}
+              <button
+                type="button"
+                onClick={handleOrganizerContinue}
+                disabled={isLoading}
+                className={`w-full py-2.5 px-4 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-50 ${
+                  isDarkMode
+                    ? 'bg-[#ffffff] text-[#191919] hover:bg-[#e6e6e6]'
+                    : 'bg-[#2383e2] text-[#ffffff] hover:bg-[#1d6fc2]'
+                }`}
+              >
+                {isLoading ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span>Entering Workspace...</span>
+                  </span>
+                ) : (
+                  <>
+                    <span>Continue as Organizer</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </>
+                )}
+              </button>
+
+              {/* Divider */}
+              <div className="relative my-5 flex items-center justify-center">
+                <div
+                  className={`w-full border-t ${
+                    isDarkMode ? 'border-[#2d2d2d]' : 'border-[#e9e9e7]'
+                  }`}
+                />
+                <span
+                  className={`relative px-3 text-[11px] uppercase tracking-wider font-medium ${
+                    isDarkMode ? 'bg-[#191919] text-[#777777]' : 'bg-[#ffffff] text-[#9b9b9b]'
+                  }`}
+                >
+                  or sign in with password
+                </span>
+              </div>
+
+              {/* Login Form */}
+              <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-medium opacity-80 mb-1">Email or username</label>
+                  <input
+                    type="text"
+                    value={loginIdentifier}
+                    onChange={(e) => setLoginIdentifier(e.target.value)}
+                    placeholder="organizer"
+                    required
+                    className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition-all ${
+                      isDarkMode
+                        ? 'bg-[#222222] border-[#333333] text-[#ffffff] placeholder-[#666666] focus:border-[#555555]'
+                        : 'bg-[#fbfbfa] border-[#e9e9e7] text-[#37352f] placeholder-[#a0a09e] focus:border-[#2383e2] focus:bg-[#ffffff]'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium opacity-80 mb-1">Password</label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    className={`w-full px-3 py-2 text-sm rounded-md border outline-none transition-all ${
+                      isDarkMode
+                        ? 'bg-[#222222] border-[#333333] text-[#ffffff] placeholder-[#666666] focus:border-[#555555]'
+                        : 'bg-[#fbfbfa] border-[#e9e9e7] text-[#37352f] placeholder-[#a0a09e] focus:border-[#2383e2] focus:bg-[#ffffff]'
+                    }`}
+                  />
+                </div>
+
+                {errorMessage && (
+                  <p className="text-xs text-rose-500 bg-rose-500/10 border border-rose-500/20 p-2 rounded">
+                    {errorMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className={`w-full py-2 px-3 text-xs font-medium rounded-md border transition-colors cursor-pointer disabled:opacity-50 ${
+                    isDarkMode
+                      ? 'bg-[#262626] border-[#333333] text-[#e6e6e6] hover:bg-[#303030]'
+                      : 'bg-[#f7f6f3] border-[#e0dfdc] text-[#37352f] hover:bg-[#eae8e4]'
+                  }`}
+                >
+                  {isLoading ? 'Verifying...' : 'Sign In'}
+                </button>
+              </form>
+
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('signup');
+                    setErrorMessage('');
+                  }}
+                  className="text-xs opacity-70 hover:opacity-100 hover:underline cursor-pointer"
+                >
+                  Don't have an account? <span className="font-semibold text-cyan-500">Sign Up</span>
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* MODE 2: SIGN UP */}
+          {authMode === 'signup' && (
+            <div>
+              <form onSubmit={handleSignupSubmit} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-medium opacity-80 mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={signupName}
+                    onChange={(e) => setSignupName(e.target.value)}
+                    placeholder="e.g. Elena Vance"
+                    required
+                    className={`w-full px-3 py-1.5 text-sm rounded-md border outline-none transition-all ${
+                      isDarkMode
+                        ? 'bg-[#222222] border-[#333333] text-[#ffffff] placeholder-[#666666] focus:border-[#555555]'
+                        : 'bg-[#fbfbfa] border-[#e9e9e7] text-[#37352f] placeholder-[#a0a09e] focus:border-[#2383e2] focus:bg-[#ffffff]'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium opacity-80 mb-1">Email or Username</label>
+                  <input
+                    type="text"
+                    value={signupIdentifier}
+                    onChange={(e) => setSignupIdentifier(e.target.value)}
+                    placeholder="organizer@event.org"
+                    required
+                    className={`w-full px-3 py-1.5 text-sm rounded-md border outline-none transition-all ${
+                      isDarkMode
+                        ? 'bg-[#222222] border-[#333333] text-[#ffffff] placeholder-[#666666] focus:border-[#555555]'
+                        : 'bg-[#fbfbfa] border-[#e9e9e7] text-[#37352f] placeholder-[#a0a09e] focus:border-[#2383e2] focus:bg-[#ffffff]'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium opacity-80 mb-1">Organizer Role</label>
+                  <select
+                    value={signupRole}
+                    onChange={(e) => setSignupRole(e.target.value)}
+                    className={`w-full px-3 py-1.5 text-xs rounded-md border outline-none cursor-pointer transition-all ${
+                      isDarkMode
+                        ? 'bg-[#222222] border-[#333333] text-[#ffffff] focus:border-[#555555]'
+                        : 'bg-[#fbfbfa] border-[#e9e9e7] text-[#37352f] focus:border-[#2383e2]'
+                    }`}
+                  >
+                    <option value="Event Organizer">Event Organizer & Producer</option>
+                    <option value="Press & Media Lead">Press & Media Lead</option>
+                    <option value="Developer Advocate">Developer Advocate (DevRel)</option>
+                    <option value="Academic Chair">Academic / Symposium Chair</option>
+                    <option value="Community Lead">Community & NGO Coordinator</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium opacity-80 mb-1">Password</label>
+                  <input
+                    type="password"
+                    value={signupPassword}
+                    onChange={(e) => setSignupPassword(e.target.value)}
+                    placeholder="At least 4 characters"
+                    required
+                    className={`w-full px-3 py-1.5 text-sm rounded-md border outline-none transition-all ${
+                      isDarkMode
+                        ? 'bg-[#222222] border-[#333333] text-[#ffffff] placeholder-[#666666] focus:border-[#555555]'
+                        : 'bg-[#fbfbfa] border-[#e9e9e7] text-[#37352f] placeholder-[#a0a09e] focus:border-[#2383e2] focus:bg-[#ffffff]'
+                    }`}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium opacity-80 mb-1">Confirm Password</label>
+                  <input
+                    type="password"
+                    value={signupConfirmPassword}
+                    onChange={(e) => setSignupConfirmPassword(e.target.value)}
+                    placeholder="Repeat password"
+                    required
+                    className={`w-full px-3 py-1.5 text-sm rounded-md border outline-none transition-all ${
+                      isDarkMode
+                        ? 'bg-[#222222] border-[#333333] text-[#ffffff] placeholder-[#666666] focus:border-[#555555]'
+                        : 'bg-[#fbfbfa] border-[#e9e9e7] text-[#37352f] placeholder-[#a0a09e] focus:border-[#2383e2] focus:bg-[#ffffff]'
+                    }`}
+                  />
+                </div>
+
+                {errorMessage && (
+                  <p className="text-xs text-rose-500 bg-rose-500/10 border border-rose-500/20 p-2 rounded">
+                    {errorMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={isLoading}
+                  className={`w-full mt-2 py-2.5 px-4 rounded-md text-sm font-medium flex items-center justify-center gap-2 transition-all cursor-pointer shadow-xs disabled:opacity-50 ${
+                    isDarkMode
+                      ? 'bg-[#ffffff] text-[#191919] hover:bg-[#e6e6e6]'
+                      : 'bg-[#2383e2] text-[#ffffff] hover:bg-[#1d6fc2]'
+                  }`}
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      <span>Creating Account...</span>
+                    </span>
+                  ) : (
+                    <>
+                      <span>Create Account & Enter</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </>
+                  )}
+                </button>
+              </form>
+
+              <div className="mt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode('login');
+                    setErrorMessage('');
+                  }}
+                  className="text-xs opacity-70 hover:opacity-100 hover:underline cursor-pointer"
+                >
+                  Already have an account? <span className="font-semibold text-cyan-500">Sign In</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Minimal Notion Callout for Zero-Demo Policy */}
           <div

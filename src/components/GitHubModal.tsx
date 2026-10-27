@@ -7,7 +7,7 @@ interface GitHubModalProps {
   isDarkMode: boolean;
 }
 
-type TabType = 'overview' | 'readme' | 'license' | 'conduct' | 'contributing';
+type TabType = 'overview' | 'deploy' | 'readme' | 'license' | 'conduct' | 'contributing';
 
 export const GitHubModal: React.FC<GitHubModalProps> = ({ isOpen, onClose, isDarkMode }) => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
@@ -78,6 +78,21 @@ export const GitHubModal: React.FC<GitHubModalProps> = ({ isOpen, onClose, isDar
           >
             <Layers className="w-3.5 h-3.5" />
             <span>Overview</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setActiveTab('deploy')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 border-b-2 font-medium transition-colors cursor-pointer ${
+              activeTab === 'deploy'
+                ? isDarkMode
+                  ? 'border-white text-white'
+                  : 'border-[#2383e2] text-[#2383e2]'
+                : 'border-transparent opacity-60 hover:opacity-100'
+            }`}
+          >
+            <Cpu className="w-3.5 h-3.5" />
+            <span>Deploy (Vercel & Pages)</span>
           </button>
 
           <button
@@ -261,7 +276,71 @@ export const GitHubModal: React.FC<GitHubModalProps> = ({ isOpen, onClose, isDar
             </div>
           )}
 
-          {/* TAB 2: README.MD */}
+          {/* TAB 2: DEPLOY (VERCEL & GITHUB PAGES) */}
+          {activeTab === 'deploy' && (
+            <div className="space-y-4">
+              {/* Vercel Card */}
+              <div
+                className={`p-4 rounded border space-y-2.5 ${
+                  isDarkMode ? 'bg-[#161616] border-[#292929]' : 'bg-[#fbfbfa] border-[#e9e9e7]'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">▲</span>
+                    <h4 className="font-semibold text-xs">Deploy to Vercel (1-Click & Recommended)</h4>
+                  </div>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+                    vercel.json ready
+                  </span>
+                </div>
+                <p className="opacity-75 text-[11px] leading-relaxed">
+                  PulseEvent Engine includes a root <code className="font-mono">vercel.json</code> and serverless functions in <code className="font-mono">/api</code>.
+                </p>
+                <div className="space-y-1 text-[11px] opacity-80 list-decimal pl-4">
+                  <p>1. Push your repository to GitHub.</p>
+                  <p>2. Import the repo at <strong>vercel.com/new</strong>.</p>
+                  <p>3. Framework is detected as <strong>Vite</strong> with output directory <strong>dist</strong>.</p>
+                  <p>4. Click <strong>Deploy</strong> to launch with serverless API and client fallback.</p>
+                </div>
+                <div
+                  className={`p-2 rounded font-mono text-[10px] flex items-center justify-between border ${
+                    isDarkMode ? 'bg-[#111111] border-[#252525]' : 'bg-[#ffffff] border-[#e0dfdc]'
+                  }`}
+                >
+                  <span>npm install -g vercel &amp;&amp; vercel</span>
+                </div>
+              </div>
+
+              {/* GitHub Pages Card */}
+              <div
+                className={`p-4 rounded border space-y-2.5 ${
+                  isDarkMode ? 'bg-[#161616] border-[#292929]' : 'bg-[#fbfbfa] border-[#e9e9e7]'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">🐙</span>
+                    <h4 className="font-semibold text-xs">Deploy to GitHub Pages / Custom Domain</h4>
+                  </div>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/10 text-cyan-500 border border-cyan-500/20">
+                    workflow active
+                  </span>
+                </div>
+                <p className="opacity-75 text-[11px] leading-relaxed">
+                  The automated GitHub Action <code className="font-mono">.github/workflows/deploy-pages.yml</code> automatically builds and publishes upon push to <code className="font-mono">main</code>.
+                </p>
+                <div className="space-y-1 text-[11px] opacity-80 list-decimal pl-4">
+                  <p>1. In your GitHub repository, open <strong>Settings &gt; Pages</strong>.</p>
+                  <p>2. Set <strong>Build and deployment &gt; Source</strong> to <strong>GitHub Actions</strong>.</p>
+                  <p>3. Push to <code className="font-mono">main</code>. The site deploys to <code className="font-mono">https://username.github.io/repo/</code>.</p>
+                  <p>4. Custom domains and SPA page reloads are supported via the included <code className="font-mono">public/404.html</code>.</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: README.MD */}
           {activeTab === 'readme' && (
             <div
               className={`p-4 rounded border font-mono text-[11px] leading-relaxed space-y-3 whitespace-pre-wrap ${
